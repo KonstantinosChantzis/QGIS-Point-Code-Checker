@@ -1,9 +1,12 @@
-"""Prüfungen des Punktcode-Prüfers – reines Python, ohne QGIS (dadurch auch ohne QGIS testbar).
+"""Prüfungen des Punktcode-Prüfers – reines Python, ohne QGIS
+(dadurch auch ohne QGIS testbar).
 
 Eingabe: Liste von Punkten als dict mit den Schlüsseln
-  fid, pkt (Punktnummer), code, linie (Liniennummer, optional), x, y, h (Höhe, optional)
+  fid, pkt (Punktnummer), code, linie (Liniennummer, optional),
+  x, y, h (Höhe, optional)
 Ergebnis: Liste von Fehlern (fehlertyp, fid, pkt, code, beschreibung)
 """
+
 import csv
 import math
 from collections import defaultdict
@@ -13,19 +16,25 @@ DUPLICATE = "Doppelte Punktnummer"
 SINGLE = "Linie mit nur einem Punkt"
 HEIGHT = "Höhenausreißer"
 
-# Beschreibungstexte Deutsch / Englisch; Sprache mit set_language("de"/"en") wählen
+# Beschreibungstexte Deutsch / Englisch;
+# Sprache mit set_language("de"/"en") wählen
 MESSAGES = {
     "de": {
         "unknown": "Code '{c}' ist nicht in der Codeliste",
         "duplicate": "{n}× vorhanden, Abstand {d:.0f} mm",
         "single": "{c} Linie {l}: nur ein Punkt, Endpunkt fehlt",
-        "height": "Höhe weicht um {d:+.2f} m von den Nachbarpunkten (Code {c}) ab",
+        "height": (
+            "Höhe weicht um {d:+.2f} m von den Nachbarpunkten " "(Code {c}) ab"
+        ),
     },
     "en": {
         "unknown": "Code '{c}' is not in the code list",
         "duplicate": "{n}× present, distance {d:.0f} mm",
         "single": "{c} line {l}: only one point, end point missing",
-        "height": "Height differs by {d:+.2f} m from neighbouring points (code {c})",
+        "height": (
+            "Height differs by {d:+.2f} m from neighbouring points "
+            "(code {c})"
+        ),
     },
 }
 _lang = "de"
@@ -41,7 +50,8 @@ def _msg(key, **kw):
 
 
 def read_code_list(path):
-    """Codeliste als CSV lesen (Trennzeichen ; oder ,). Spalten: Code;Bedeutung;Typ.
+    """Codeliste als CSV lesen (Trennzeichen ; oder ,).
+    Spalten: Code;Bedeutung;Typ.
     Typ = Linie, Symbol oder Punkt. Gibt {code: (bedeutung, typ)} zurück."""
     with open(path, encoding="utf-8-sig", newline="") as f:
         sample = f.read(2048)
@@ -59,7 +69,10 @@ def read_code_list(path):
 
 
 def parse_code_text(text):
-    """Codes aus einem Textfeld: 'BO:Linie, GEB:Linie, LM, SD' -> {code: ('', typ)}."""
+    """Codes aus einem Textfeld.
+
+    'BO:Linie, GEB:Linie, LM, SD' -> {code: ('', typ)}
+    """
     codes = {}
     for part in text.replace(";", ",").split(","):
         part = part.strip()
@@ -75,9 +88,11 @@ def is_line(typ):
 
 
 def check_unknown(points, codes):
-    return [(UNKNOWN, p["fid"], p["pkt"], p["code"],
-             _msg("unknown", c=p["code"]))
-            for p in points if str(p["code"]).strip() not in codes]
+    return [
+        (UNKNOWN, p["fid"], p["pkt"], p["code"], _msg("unknown", c=p["code"]))
+        for p in points
+        if str(p["code"]).strip() not in codes
+    ]
 
 
 def check_duplicates(points):
@@ -88,10 +103,21 @@ def check_duplicates(points):
     for pkt, ps in groups.items():
         if len(ps) < 2:
             continue
-        d = max(math.hypot(a["x"] - b["x"], a["y"] - b["y"]) for a in ps for b in ps)
+        d = max(
+            math.hypot(a["x"] - b["x"], a["y"] - b["y"])
+            for a in ps
+            for b in ps
+        )
         for p in ps[1:]:
-            errors.append((DUPLICATE, p["fid"], pkt, p["code"],
-                           _msg("duplicate", n=len(ps), d=d * 1000)))
+            errors.append(
+                (
+                    DUPLICATE,
+                    p["fid"],
+                    pkt,
+                    p["code"],
+                    _msg("duplicate", n=len(ps), d=d * 1000),
+                )
+            )
     return errors
 
 
@@ -101,14 +127,25 @@ def check_single_lines(points, codes):
         code = str(p["code"]).strip()
         if code in codes and is_line(codes[code][1]):
             groups[(code, str(p.get("linie") or ""))].append(p)
-    return [(SINGLE, ps[0]["fid"], ps[0]["pkt"], code,
-             _msg("single", c=code, l=line or "–"))
-            for (code, line), ps in groups.items() if len(ps) == 1]
+    return [
+        (
+            SINGLE,
+            ps[0]["fid"],
+            ps[0]["pkt"],
+            code,
+            _msg("single", c=code, l=line or "–"),
+        )
+        for (code, line), ps in groups.items()
+        if len(ps) == 1
+    ]
 
 
 def check_heights(points, tolerance, k=4):
-    """Höhe eines Punktes mit dem Median der k nächsten Punkte mit gleichem Code vergleichen.
-    Gleicher Code, damit z. B. Gebäudeecken nicht mit Straßenpunkten verglichen werden."""
+    """Höhe eines Punktes mit dem Median der k nächsten Punkte
+    mit gleichem Code vergleichen.
+    Gleicher Code, damit z. B. Gebäudeecken nicht mit Straßenpunkten
+    verglichen werden.
+    """
     by_code = defaultdict(list)
     for p in points:
         if p.get("h") is not None:
@@ -119,19 +156,29 @@ def check_heights(points, tolerance, k=4):
             continue
         kk = min(k, len(pts) - 1)
         for p in pts:
-            near = sorted((q for q in pts if q is not p),
-                          key=lambda q: (q["x"] - p["x"]) ** 2 + (q["y"] - p["y"]) ** 2)[:kk]
+            near = sorted(
+                (q for q in pts if q is not p),
+                key=lambda q: (q["x"] - p["x"]) ** 2 + (q["y"] - p["y"]) ** 2,
+            )[:kk]
             hs = sorted(q["h"] for q in near)
             med = (hs[len(hs) // 2] + hs[(len(hs) - 1) // 2]) / 2
             diff = p["h"] - med
             if abs(diff) > tolerance:
-                errors.append((HEIGHT, p["fid"], p["pkt"], p["code"],
-                               _msg("height", d=diff, c=code)))
+                errors.append(
+                    (
+                        HEIGHT,
+                        p["fid"],
+                        p["pkt"],
+                        p["code"],
+                        _msg("height", d=diff, c=code),
+                    )
+                )
     return errors
 
 
 def build_lines(points, codes):
-    """Linienpunkte nach Code und Liniennummer verbinden (Reihenfolge = Punktnummer).
+    """Linienpunkte nach Code und Liniennummer verbinden
+    (Reihenfolge = Punktnummer).
     Gibt Liste (code, linie, [(x, y), ...]) zurück."""
     groups = defaultdict(list)
     for p in points:
@@ -142,5 +189,9 @@ def build_lines(points, codes):
     def key(p):
         s = str(p["pkt"])
         return (0, float(s)) if s.replace(".", "", 1).isdigit() else (1, s)
-    return [(code, line, [(p["x"], p["y"]) for p in sorted(ps, key=key)])
-            for (code, line), ps in groups.items() if len(ps) >= 2]
+
+    return [
+        (code, line, [(p["x"], p["y"]) for p in sorted(ps, key=key)])
+        for (code, line), ps in groups.items()
+        if len(ps) >= 2
+    ]

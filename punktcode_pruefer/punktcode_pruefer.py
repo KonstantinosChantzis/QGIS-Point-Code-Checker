@@ -1,4 +1,6 @@
-"""Hauptklasse: Menüeintrag, Werkzeugleisten-Knopf, Ablauf der Prüfung, Fehler- und Linienlayer, Export."""
+"""Hauptklasse: Menüeintrag, Werkzeugleisten-Knopf, Ablauf der Prüfung,
+Fehler- und Linienlayer, Export."""
+
 import os
 from collections import Counter
 
@@ -7,8 +9,18 @@ from qgis.PyQt.QtWidgets import QAction, QFileDialog
 from qgis.PyQt.QtCore import QVariant
 from qgis.PyQt import sip
 from qgis.core import (
-    QgsProject, QgsVectorLayer, QgsFeature, QgsField, QgsFields, QgsGeometry, QgsPointXY,
-    QgsCategorizedSymbolRenderer, QgsRendererCategory, QgsSymbol, QgsVectorFileWriter, QgsWkbTypes,
+    QgsProject,
+    QgsVectorLayer,
+    QgsFeature,
+    QgsField,
+    QgsFields,
+    QgsGeometry,
+    QgsPointXY,
+    QgsCategorizedSymbolRenderer,
+    QgsRendererCategory,
+    QgsSymbol,
+    QgsVectorFileWriter,
+    QgsWkbTypes,
     QgsCoordinateTransform,
 )
 
@@ -22,12 +34,18 @@ except AttributeError:
     WRITER_OK = QgsVectorFileWriter.NoError
 try:
     from qgis.core import Qgis
+
     NO_GEOMETRY = Qgis.WkbType.NoGeometry
 except AttributeError:
     NO_GEOMETRY = QgsWkbTypes.NoGeometry
 
 EXPORT = {".gpkg": "GPKG", ".xlsx": "XLSX", ".csv": "CSV"}
-COLORS = {checks.UNKNOWN: "#8e44ad", checks.DUPLICATE: "#e74c3c", checks.SINGLE: "#f39c12", checks.HEIGHT: "#2980b9"}
+COLORS = {
+    checks.UNKNOWN: "#8e44ad",
+    checks.DUPLICATE: "#e74c3c",
+    checks.SINGLE: "#f39c12",
+    checks.HEIGHT: "#2980b9",
+}
 
 
 def _num(v):
@@ -49,7 +67,9 @@ class PunktcodePrueferPlugin:
 
     def initGui(self):
         icon = QIcon(os.path.join(os.path.dirname(__file__), "icon.png"))
-        self.action = QAction(icon, "Punktcode-Prüfer", self.iface.mainWindow())
+        self.action = QAction(
+            icon, "Punktcode-Prüfer", self.iface.mainWindow()
+        )
         self.action.triggered.connect(self.run)
         self.iface.addToolBarIcon(self.action)
         self.iface.addPluginToVectorMenu("&Punktcode-Prüfer", self.action)
@@ -65,9 +85,14 @@ class PunktcodePrueferPlugin:
             self.dialog.export_button.clicked.connect(self.export_errors)
             self.dialog.table.cellDoubleClicked.connect(self.zoom_to)
         # eigene Ergebnislayer nicht als Punktlayer anbieten
-        own = [l for l in QgsProject.instance().mapLayers().values()
-               if l.customProperty("punktcode_pruefer/output", False)
-               or l.name().startswith(("Punktcode-Fehler –", "Point code errors –"))]
+        own = [
+            lyr
+            for lyr in QgsProject.instance().mapLayers().values()
+            if lyr.customProperty("punktcode_pruefer/output", False)
+            or lyr.name().startswith(
+                ("Punktcode-Fehler –", "Point code errors –")
+            )
+        ]
         self.dialog.layer_combo.setExceptedLayerList(own)
         self.dialog.show()
         self.dialog.raise_()
@@ -75,7 +100,12 @@ class PunktcodePrueferPlugin:
     # --- Prüfung ---
     def read_points(self, layer):
         d = self.dialog
-        fp, fc, fl, fh = d.f_pkt.currentField(), d.f_code.currentField(), d.f_line.currentField(), d.f_h.currentField()
+        fp, fc, fl, fh = (
+            d.f_pkt.currentField(),
+            d.f_code.currentField(),
+            d.f_line.currentField(),
+            d.f_h.currentField(),
+        )
         pts = []
         for f in layer.getFeatures():
             g = f.geometry()
@@ -85,9 +115,19 @@ class PunktcodePrueferPlugin:
             h = _num(f[fh]) if fh else None
             if h is None and fh == "" and QgsWkbTypes.hasZ(g.wkbType()):
                 h = g.constGet().z()
-            pts.append({"fid": f.id(), "pkt": f[fp], "code": "" if f[fc] is None else str(f[fc]).strip(),
-                        "linie": "" if not fl or f[fl] is None else str(f[fl]).strip(),
-                        "x": p.x(), "y": p.y(), "h": h})
+            pts.append(
+                {
+                    "fid": f.id(),
+                    "pkt": f[fp],
+                    "code": "" if f[fc] is None else str(f[fc]).strip(),
+                    "linie": (
+                        "" if not fl or f[fl] is None else str(f[fl]).strip()
+                    ),
+                    "x": p.x(),
+                    "y": p.y(),
+                    "h": h,
+                }
+            )
         return pts
 
     def start_check(self):
@@ -97,7 +137,9 @@ class PunktcodePrueferPlugin:
             d.summary.setText(tr("Bitte zuerst einen Punktlayer auswählen."))
             return
         if not d.f_pkt.currentField() or not d.f_code.currentField():
-            d.summary.setText(tr("Bitte die Felder für Punktnummer und Code auswählen."))
+            d.summary.setText(
+                tr("Bitte die Felder für Punktnummer und Code auswählen.")
+            )
             return
         try:
             if d.code_file.text().strip():
@@ -105,10 +147,17 @@ class PunktcodePrueferPlugin:
             else:
                 codes = checks.parse_code_text(d.code_text.text())
         except (OSError, UnicodeDecodeError) as exc:
-            d.summary.setText(tr("Codeliste konnte nicht gelesen werden: {msg}", msg=str(exc)))
+            d.summary.setText(
+                tr(
+                    "Codeliste konnte nicht gelesen werden: {msg}",
+                    msg=str(exc),
+                )
+            )
             return
         if not codes:
-            d.summary.setText(tr("Bitte eine Codeliste angeben (CSV-Datei oder Text)."))
+            d.summary.setText(
+                tr("Bitte eine Codeliste angeben (CSV-Datei oder Text).")
+            )
             return
         d.save_settings()
 
@@ -129,13 +178,25 @@ class PunktcodePrueferPlugin:
 
         self.remove_layers()
         if errors:
-            parts = ", ".join(f"{k}: {v}" for k, v in Counter(e[0] for e in errors).items())
-            text = tr("{n} Fehler in {total} Punkten – {parts}", n=len(errors), total=len(pts), parts=parts)
+            parts = ", ".join(
+                f"{k}: {v}" for k, v in Counter(e[0] for e in errors).items()
+            )
+            text = tr(
+                "{n} Fehler in {total} Punkten – {parts}",
+                n=len(errors),
+                total=len(pts),
+                parts=parts,
+            )
         else:
-            text = tr("Keine Fehler gefunden ({total} Punkte geprüft).", total=len(pts))
+            text = tr(
+                "Keine Fehler gefunden ({total} Punkte geprüft).",
+                total=len(pts),
+            )
         if d.chk_lines.isChecked():
             bad = {e[1] for e in errors}
-            lines = checks.build_lines([p for p in pts if p["fid"] not in bad], codes)
+            lines = checks.build_lines(
+                [p for p in pts if p["fid"] not in bad], codes
+            )
             self.add_line_layer(layer, lines, codes)
             text += tr(" · {l} Linien erzeugt", l=len(lines))
         self.add_error_layer(layer, errors)
@@ -144,14 +205,21 @@ class PunktcodePrueferPlugin:
     # --- Layer ---
     def remove_layers(self):
         for vl in self.layers:
-            if not sip.isdeleted(vl) and QgsProject.instance().mapLayer(vl.id()) is not None:
+            if (
+                not sip.isdeleted(vl)
+                and QgsProject.instance().mapLayer(vl.id()) is not None
+            ):
                 QgsProject.instance().removeMapLayer(vl.id())
         self.layers = []
 
     def add_line_layer(self, layer, lines, codes):
         if not lines:
             return
-        vl = QgsVectorLayer(f"LineString?crs={layer.crs().authid()}", tr("Linien aus Codes – {name}", name=layer.name()), "memory")
+        vl = QgsVectorLayer(
+            f"LineString?crs={layer.crs().authid()}",
+            tr("Linien aus Codes – {name}", name=layer.name()),
+            "memory",
+        )
         flds = QgsFields()
         for n in ("code", "linie", "bedeutung"):
             flds.append(QgsField(n, QVariant.String))
@@ -160,7 +228,9 @@ class PunktcodePrueferPlugin:
         feats = []
         for code, line, xy in lines:
             f = QgsFeature(vl.fields())
-            f.setGeometry(QgsGeometry.fromPolylineXY([QgsPointXY(x, y) for x, y in xy]))
+            f.setGeometry(
+                QgsGeometry.fromPolylineXY([QgsPointXY(x, y) for x, y in xy])
+            )
             f.setAttributes([code, line, codes.get(code, ("", ""))[0]])
             feats.append(f)
         vl.dataProvider().addFeatures(feats)
@@ -202,7 +272,11 @@ class PunktcodePrueferPlugin:
     def add_error_layer(self, layer, errors):
         if not errors:
             return
-        vl = QgsVectorLayer(f"Point?crs={layer.crs().authid()}", tr("Punktcode-Fehler – {name}", name=layer.name()), "memory")
+        vl = QgsVectorLayer(
+            f"Point?crs={layer.crs().authid()}",
+            tr("Punktcode-Fehler – {name}", name=layer.name()),
+            "memory",
+        )
         vl.dataProvider().addAttributes(self._error_fields())
         vl.updateFields()
         vl.dataProvider().addFeatures(self._error_features(layer, vl))
@@ -226,15 +300,25 @@ class PunktcodePrueferPlugin:
         if not self.errors or layer is None:
             d.summary.setText(tr("Keine Fehler zum Exportieren."))
             return
-        path, filt = QFileDialog.getSaveFileName(d, tr("Fehlerliste exportieren"), "punktcode_fehler",
-                                                 "GeoPackage (*.gpkg);;Excel (*.xlsx);;CSV (*.csv)")
+        path, filt = QFileDialog.getSaveFileName(
+            d,
+            tr("Fehlerliste exportieren"),
+            "punktcode_fehler",
+            "GeoPackage (*.gpkg);;Excel (*.xlsx);;CSV (*.csv)",
+        )
         if not path:
             return
         ext = os.path.splitext(path)[1].lower()
         if ext not in EXPORT:
-            ext = ".xlsx" if "xlsx" in filt else ".csv" if "csv" in filt else ".gpkg"
+            ext = (
+                ".xlsx"
+                if "xlsx" in filt
+                else ".csv" if "csv" in filt else ".gpkg"
+            )
             path += ext
-        vl = QgsVectorLayer(f"Point?crs={layer.crs().authid()}", "punktcode_fehler", "memory")
+        vl = QgsVectorLayer(
+            f"Point?crs={layer.crs().authid()}", "punktcode_fehler", "memory"
+        )
         vl.dataProvider().addAttributes(self._error_fields(xy=True))
         vl.updateFields()
         vl.dataProvider().addFeatures(self._error_features(layer, vl, xy=True))
@@ -244,9 +328,17 @@ class PunktcodePrueferPlugin:
         opts.layerName = "punktcode_fehler"
         if EXPORT[ext] != "GPKG":
             opts.overrideGeometryType = NO_GEOMETRY
-        res = QgsVectorFileWriter.writeAsVectorFormatV3(vl, path, QgsProject.instance().transformContext(), opts)
+        res = QgsVectorFileWriter.writeAsVectorFormatV3(
+            vl, path, QgsProject.instance().transformContext(), opts
+        )
         if res[0] == WRITER_OK:
-            d.summary.setText(tr("{n} Fehler exportiert: {path}", n=len(self.errors), path=path))
+            d.summary.setText(
+                tr(
+                    "{n} Fehler exportiert: {path}",
+                    n=len(self.errors),
+                    path=path,
+                )
+            )
         else:
             d.summary.setText(tr("Export fehlgeschlagen: {msg}", msg=res[1]))
 
@@ -262,7 +354,11 @@ class PunktcodePrueferPlugin:
         canvas = self.iface.mapCanvas()
         dest = canvas.mapSettings().destinationCrs()
         if layer.crs() != dest:
-            g.transform(QgsCoordinateTransform(layer.crs(), dest, QgsProject.instance()))
+            g.transform(
+                QgsCoordinateTransform(
+                    layer.crs(), dest, QgsProject.instance()
+                )
+            )
         dist = 0.0001 if dest.isGeographic() else 10
         canvas.setExtent(g.buffer(dist, 4).boundingBox())
         canvas.refresh()
