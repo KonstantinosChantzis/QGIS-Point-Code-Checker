@@ -28,16 +28,13 @@ from . import checks
 from .dialog import PunktcodeDialog
 from .i18n import tr, is_german
 
-try:
-    WRITER_OK = QgsVectorFileWriter.WriterError.NoError
-except AttributeError:
-    WRITER_OK = QgsVectorFileWriter.NoError
+WRITER_OK = QgsVectorFileWriter.WriterError.NoError
 try:
     from qgis.core import Qgis
 
     NO_GEOMETRY = Qgis.WkbType.NoGeometry
 except AttributeError:
-    NO_GEOMETRY = QgsWkbTypes.NoGeometry
+    NO_GEOMETRY = QgsWkbTypes.Type.NoGeometry
 
 EXPORT = {".gpkg": "GPKG", ".xlsx": "XLSX", ".csv": "CSV"}
 COLORS = {

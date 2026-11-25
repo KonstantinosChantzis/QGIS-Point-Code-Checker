@@ -24,7 +24,7 @@ try:  # QGIS >= 3.34
 
     POINT_FILTER = Qgis.LayerFilter.PointLayer
 except AttributeError:
-    POINT_FILTER = QgsMapLayerProxyModel.PointLayer
+    POINT_FILTER = QgsMapLayerProxyModel.Filter.PointLayer
 
 
 class PunktcodeDialog(QDialog):
@@ -112,8 +112,9 @@ class PunktcodeDialog(QDialog):
             ]
         )
         self.table.horizontalHeader().setStretchLastSection(True)
-        self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)
-        self.table.setSelectionBehavior(QAbstractItemView.SelectRows)
+        view = QAbstractItemView
+        self.table.setEditTriggers(view.EditTrigger.NoEditTriggers)
+        self.table.setSelectionBehavior(view.SelectionBehavior.SelectRows)
         layout.addWidget(self.table)
         layout.addWidget(
             QLabel(tr("Doppelklick auf eine Zeile zoomt zum Punkt."))
