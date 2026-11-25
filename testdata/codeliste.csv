@@ -1,0 +1,9 @@
+Code;Bedeutung;Typ
+BO;Bordstein;Linie
+GW;Gehweghinterkante;Linie
+GEB;Gebäudekante;Linie
+ZA;Zaun;Linie
+LM;Laternenmast;Symbol
+SD;Schachtdeckel;Symbol
+BA;Baum;Symbol
+HP;Höhenpunkt;Punkt

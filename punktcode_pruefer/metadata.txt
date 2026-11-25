@@ -1,0 +1,18 @@
+[general]
+name=Punktcode-Prüfer
+qgisMinimumVersion=3.28
+qgisMaximumVersion=4.99
+description=Checks survey points with codes before the plan is made (unknown codes, duplicate point numbers, lines with one point, height outliers) | Prüft Vermessungspunkte mit Codes
+about=Punktcode-Prüfer checks a point layer from a topographic survey (point number, code, line number, height) against a code list before the as-built plan is made: unknown codes, duplicate point numbers, lines with only one point and height outliers compared with the nearest points of the same code. Errors are listed in a table, shown as a coloured point layer and can be exported to GeoPackage, Excel or CSV. Optionally a line layer is created from the codes (points with the same code and line number are connected). Code list as CSV file (code;meaning;type) or as text. Interface in German and English. | Der Punktcode-Prüfer prüft einen Punktlayer aus einer Vermessung (Punktnummer, Code, Liniennummer, Höhe) gegen eine Codeliste: unbekannte Codes, doppelte Punktnummern, Linien mit nur einem Punkt und Höhenausreißer. Fehler als Tabelle und Fehlerlayer, Export nach GeoPackage, Excel oder CSV; optional Linienlayer aus den Codes.
+version=1.0.0
+author=Konstantinos Chantzis
+email=costashantzis@gmail.com
+homepage=https://github.com/KonstantinosChantzis/QGIS-Point-Code-Checker
+repository=https://github.com/KonstantinosChantzis/QGIS-Point-Code-Checker
+tracker=https://github.com/KonstantinosChantzis/QGIS-Point-Code-Checker/issues
+changelog=1.0.0 First version: 4 checks, error layer, line layer from codes, export, German/English interface
+tags=survey,surveying,point codes,code list,quality assurance,as-built,topographic survey,Vermessung
+category=Vector
+icon=icon.png
+experimental=False
+deprecated=False
